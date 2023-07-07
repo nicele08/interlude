@@ -15,6 +15,16 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: [true, "Please provide a password for this User."],
     },
+    settings: {
+      type: Object,
+      default: {
+        sessionLength: 25,
+        sessionDuration: 25,
+        breakDuration: 5,
+        endOfSessionSound: "/music/ringtone1.wav",
+        endOfBreakSound: "/music/ringtone2.wav",
+      },
+    },
   },
   {
     timestamps: true,

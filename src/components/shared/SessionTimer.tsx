@@ -1,16 +1,23 @@
 "use client";
 
+import { SessionTimerConfig } from "@/types/setting.type";
 import React, { useState, useEffect } from "react";
 
-const SessionTimer: React.FC = () => {
-  const [sessionLength, setSessionLength] = useState<string>("");
+const SessionTimer = ({ config }: { config: SessionTimerConfig }) => {
+  const [sessionDuration, setSessionDuration] = useState<number>(
+    config.sessionDuration || 25
+  );
+  const [sessionLength, setSessionLength] = useState<string>(
+    config.sessionLength.toString() || "25"
+  );
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [timerActive, setTimerActive] = useState<boolean>(false);
+  const [currentPhase, setCurrentPhase] = useState<string>("");
+  const [currentPhaseNumber, setCurrentPhaseNumber] = useState<number>(1);
   const [ringtone, setRingtone] = useState<HTMLAudioElement | null>(null);
 
-  const sessionDuration: number = 1; // Session duration in minutes
-  const breakDuration: number = 1; // Break duration in minutes
-  const maxSessionLength: number = 240; // Maximum session length in minutes
+  const breakDuration: number = config.breakDuration || 5;
+  const maxSessionLength: number = 240;
 
   useEffect(() => {
     if (timerActive) {
@@ -25,17 +32,45 @@ const SessionTimer: React.FC = () => {
   useEffect(() => {
     if (timeRemaining === 0) {
       playRingtone();
-      if (sessionLength === "0") {
-        stopTimer();
-      } else {
-        startBreak();
+      if (currentPhase === "session") {
+        if (sessionLength === "0") {
+          stopTimer();
+        } else {
+          startBreak();
+        }
+      } else if (currentPhase === "break") {
+        startSession();
       }
     }
   }, [timeRemaining]);
 
   const playRingtone = (): void => {
     if (ringtone) {
-      ringtone.play();
+      if (currentPhase === "session" && config.endOfSessionSound) {
+        ringtone.src = config.endOfSessionSound;
+      } else if (currentPhase === "break" && config.endOfBreakSound) {
+        ringtone.src = config.endOfBreakSound;
+      }
+
+      if (ringtone.src) {
+        ringtone.play();
+      }
+    }
+  };
+
+  const changeSessionDuration = async (duration: number) => {
+    try {
+      await fetch("/api/settings", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          sessionLength: duration,
+        }),
+      });
+    } catch (error) {
+      console.log(error);
     }
   };
 
@@ -46,24 +81,39 @@ const SessionTimer: React.FC = () => {
     }
 
     const clampedSessionLength: number = Math.min(
-      Math.max(parsedSessionLength, 1),
+      Math.max(parsedSessionLength, 10),
       maxSessionLength
     );
 
-    setTimeRemaining(clampedSessionLength * 60); // Convert minutes to seconds
+    changeSessionDuration(clampedSessionLength);
+
+    setTimeRemaining(clampedSessionLength * 60);
     setSessionLength(clampedSessionLength.toString());
+    setCurrentPhase("session");
+    setCurrentPhaseNumber(1);
+    setTimerActive(true);
+  };
+
+  const startSession = (): void => {
+    setTimeRemaining(sessionDuration * 60);
+    setSessionLength("");
+    setCurrentPhase("session");
+    setCurrentPhaseNumber((prevNumber) => prevNumber + 1);
     setTimerActive(true);
   };
 
   const startBreak = (): void => {
-    setTimeRemaining(breakDuration * 60); // Convert minutes to seconds
-    setSessionLength("0");
+    setTimeRemaining(breakDuration * 60);
+    setCurrentPhase("break");
+    setCurrentPhaseNumber((prevNumber) => prevNumber + 1);
     setTimerActive(true);
   };
 
   const stopTimer = (): void => {
     setTimerActive(false);
-    setSessionLength("");
+    setSessionLength(sessionDuration.toString());
+    setCurrentPhase("");
+    setCurrentPhaseNumber(1);
   };
 
   const formatTime = (timeInSeconds: number): string => {
@@ -76,20 +126,25 @@ const SessionTimer: React.FC = () => {
 
   const calculateBreaks = (sessionLength: string): number => {
     const parsedSessionLength: number = parseInt(sessionLength, 10);
-    const totalSessions: number = Math.floor(parsedSessionLength / sessionDuration);
+    const totalSessions: number = Math.floor(
+      parsedSessionLength / sessionDuration
+    );
     const totalBreaks: number = totalSessions > 0 ? totalSessions - 1 : 0;
     return totalBreaks;
   };
 
-  const handleSessionLengthChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+  const handleSessionLengthChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ): void => {
     setSessionLength(e.target.value);
   };
 
   useEffect(() => {
-    const audio = new Audio("/music/ring1.wav");
+    const audio = new Audio();
     audio.addEventListener("ended", () => {
       audio.currentTime = 0; // Reset the audio to the beginning
     });
+
     setRingtone(audio);
   }, []);
 
@@ -112,18 +167,29 @@ const SessionTimer: React.FC = () => {
           />
         </div>
       ) : (
-        <div className="text-3xl font-bold mb-4">{formatTime(timeRemaining)}</div>
+        <div className="text-3xl font-bold mb-4">
+          {formatTime(timeRemaining)}{" "}
+          {currentPhase && currentPhaseNumber && (
+            <span>
+              - {currentPhase === "session" ? "Session" : "Break"}{" "}
+              {currentPhaseNumber}
+            </span>
+          )}
+        </div>
       )}
       {!timerActive && sessionLength && (
         <div className="text-gray-600 mb-4">
-          {`Total breaks: ${calculateBreaks(sessionLength)}`}
+          {`Total ${
+            currentPhase === "session" ? "Breaks" : "Sessions"
+          }: ${calculateBreaks(sessionLength)}`}
         </div>
       )}
       <div className="flex space-x-4">
         {!timerActive ? (
           <button
-            onClick={startTimer}
+            type="button"
             disabled={!sessionLength}
+            onClick={startTimer}
             className={`bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded ${
               !sessionLength ? "opacity-50 cursor-not-allowed" : ""
             }`}
@@ -132,6 +198,7 @@ const SessionTimer: React.FC = () => {
           </button>
         ) : (
           <button
+            type="button"
             onClick={stopTimer}
             className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded"
           >
