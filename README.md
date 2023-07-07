@@ -11,6 +11,7 @@ Revolutionize productivity and well-being with Interlude. Empowering individuals
 - [Getting Started](#getting-started)
 - [Usage](#usage)
 - [Configuration](#configuration)
+- [Demo](#demo)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -53,6 +54,10 @@ Interlude allows you to configure various settings to customize your experience.
 - `JWT_SECRET`: The secret key used to sign the JWT.
 
 Update these settings to meet your preferences and requirements.
+
+## Demo
+
+Check out the [demo](https://interlude-rw.vercel.app/) of Interlude to see it in action.
 
 ## Contributing
 
