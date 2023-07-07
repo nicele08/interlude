@@ -1,9 +1,15 @@
 import PublicHeader from "@/components/partials/PublicHeader";
 import InterludeIntro from "@/components/shared/InterludeIntro";
 import SignupForm from "@/components/shared/SignupForm";
+import { getAuthCookie } from "@/helpers/auth";
 import Image from "next/image";
+import { redirect } from "next/navigation";
 
 export default function Home() {
+  const authData = getAuthCookie();
+  if (authData) {
+    return redirect("/dashboard");
+  }
   return (
     <main className="relative flex flex-col items-center min-h-screen">
       <Image
