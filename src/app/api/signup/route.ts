@@ -41,6 +41,7 @@ export async function POST(request: Request) {
       {
         userId: user._id,
         email,
+        name,
       },
       process.env.JWT_SECRET || "secret"
     );

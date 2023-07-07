@@ -23,6 +23,12 @@ export default function SignupForm() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!credentials.name || !credentials.email || !credentials.password) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
     setSubmitting(true);
 
     try {
