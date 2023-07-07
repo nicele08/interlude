@@ -5,9 +5,18 @@ import React from "react";
 import Logo from "./Logo";
 import { Avatar, Dropdown } from "flowbite-react";
 import { useRouter } from "next/navigation";
-import { HiCog } from "react-icons/hi";
+import Settings from "../shared/Settings";
+import { SessionTimerConfig } from "@/types/setting.type";
 
-const Header = ({ name = "", email = "" }) => {
+const Header = ({
+  name,
+  email,
+  settings,
+}: {
+  settings: SessionTimerConfig;
+  name: string;
+  email: string;
+}) => {
   const router = useRouter();
   const moveToLink = (path: string) => {
     router.push(path);
@@ -20,12 +29,7 @@ const Header = ({ name = "", email = "" }) => {
         </Link>
 
         <div className="flex items-center space-x-3">
-          <button
-            type="button"
-            className="text-gray-500 hover:bg-gray-100 bg-gray-200 focus:outline-none focus:ring-4 focus:ring-gray-200 rounded-lg text-sm p-2"
-          >
-            <HiCog className="w-5 h-5" />
-          </button>
+          <Settings settings={settings} />
           <Dropdown inline label={<Avatar rounded />} arrowIcon={false}>
             <Dropdown.Header>
               <span className="block text-sm">{name}</span>

@@ -2,8 +2,10 @@
 
 import { SessionTimerConfig } from "@/types/setting.type";
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 const SessionTimer = ({ config }: { config: SessionTimerConfig }) => {
+  const router = useRouter();
   const [sessionDuration, setSessionDuration] = useState<number>(
     config.sessionDuration || 25
   );
@@ -18,6 +20,16 @@ const SessionTimer = ({ config }: { config: SessionTimerConfig }) => {
 
   const breakDuration: number = config.breakDuration || 5;
   const maxSessionLength: number = 240;
+
+  useEffect(() => {
+    if (config.sessionLength) {
+      setSessionLength(config.sessionLength.toString());
+    }
+
+    if (config.sessionDuration) {
+      setSessionDuration(config.sessionDuration);
+    }
+  }, [config]);
 
   useEffect(() => {
     if (timerActive) {
@@ -58,7 +70,7 @@ const SessionTimer = ({ config }: { config: SessionTimerConfig }) => {
     }
   };
 
-  const changeSessionDuration = async (duration: number) => {
+  const changeSessionLength = async (duration: number) => {
     try {
       await fetch("/api/settings", {
         method: "PUT",
@@ -85,7 +97,7 @@ const SessionTimer = ({ config }: { config: SessionTimerConfig }) => {
       maxSessionLength
     );
 
-    changeSessionDuration(clampedSessionLength);
+    changeSessionLength(clampedSessionLength);
 
     setTimeRemaining(clampedSessionLength * 60);
     setSessionLength(clampedSessionLength.toString());
@@ -110,8 +122,8 @@ const SessionTimer = ({ config }: { config: SessionTimerConfig }) => {
   };
 
   const stopTimer = (): void => {
+    router.refresh();
     setTimerActive(false);
-    setSessionLength(sessionDuration.toString());
     setCurrentPhase("");
     setCurrentPhaseNumber(1);
   };
